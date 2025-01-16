@@ -87,27 +87,31 @@ class PaginatorSession:
     def update_disabled_status(self):
         if self.current == self.first_page():
             # disable << button
-            if self._buttons_map["<<"]:
+            if self._buttons_map["<<"] is not None:
                 self._buttons_map["<<"].disabled = True
 
-            self._buttons_map["<"].disabled = True
+            if self._buttons_map["<"] is not None:
+                self._buttons_map["<"].disabled = True
         else:
-            if self._buttons_map["<<"]:
+            if self._buttons_map["<<"] is not None:
                 self._buttons_map["<<"].disabled = False
 
-            self._buttons_map["<"].disabled = False
+            if self._buttons_map["<"] is not None:
+                self._buttons_map["<"].disabled = False
 
         if self.current == self.last_page():
             # disable >> button
             if self._buttons_map[">>"] is not None:
                 self._buttons_map[">>"].disabled = True
 
-            self._buttons_map[">"].disabled = True
+            if self._buttons_map[">"] is not None:
+                self._buttons_map[">"].disabled = True
         else:
             if self._buttons_map[">>"] is not None:
                 self._buttons_map[">>"].disabled = False
 
-            self._buttons_map[">"].disabled = False
+            if self._buttons_map[">"] is not None:
+                self._buttons_map[">"].disabled = False
 
     async def create_base(self, item) -> None:
         """
@@ -151,7 +155,10 @@ class PaginatorSession:
         """
         if not self.running:
             await self.show_page(self.current)
-            await self.view.wait()
+
+            if self.view is not None:
+                await self.view.wait()
+
             await self.close(delete=False)
 
     async def close(
@@ -182,12 +189,13 @@ class PaginatorSession:
 
             self.running = False
 
-            self.view.stop()
-            if delete:
-                await message.delete()
-            else:
-                self.view.clear_items()
-                await message.edit(view=self.view)
+            if self.view is not None:
+                self.view.stop()
+                if delete:
+                    await message.delete()
+                else:
+                    self.view.clear_items()
+                    await message.edit(view=self.view)
 
 
 class PaginatorView(View):
@@ -216,7 +224,7 @@ class PaginatorView(View):
         self.fill_items()
 
     @discord.ui.button(label="Stop", style=ButtonStyle.danger)
-    async def stop_button(self, button: Button, interaction: Interaction):
+    async def stop_button(self, interaction: Interaction, button: Button):
         await self.handler.close(interaction=interaction)
 
     def fill_items(self):
@@ -308,7 +316,7 @@ class EmbedPaginatorSession(PaginatorSession):
                 if embed.footer.icon:
                     icon_url = embed.footer.icon.url
                 else:
-                    icon_url = Embed.Empty
+                    icon_url = None
                 embed.set_footer(text=footer_text, icon_url=icon_url)
 
                 # select menu
@@ -369,7 +377,7 @@ class MessagePaginatorSession(PaginatorSession):
             if self.embed.footer.icon:
                 icon_url = self.embed.footer.icon.url
             else:
-                icon_url = Embed.Empty
+                icon_url = None
 
             self.embed.set_footer(text=footer_text, icon_url=icon_url)
 
